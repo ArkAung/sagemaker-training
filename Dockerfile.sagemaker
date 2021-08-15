@@ -1,0 +1,23 @@
+# Using Sagemaker PyTorch 1.8.1 GPU Python 3.6 Ubuntu 18.04 with Cuda 11.1 container as base image
+# Check https://github.com/aws/deep-learning-containers/blob/master/available_images.md for
+# more available base images
+
+ARG REGION=us-east-2
+FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.8.1-gpu-py36-cu111-ubuntu18.04
+
+############# Install Python packages ############
+
+COPY sagemaker_container/requirements.txt /opt/ml/code/requirements.txt
+RUN pip install --requirement /opt/ml/code/requirements.txt
+
+############# Copying Sources ##############
+
+COPY sagemaker_container/*.py /opt/ml/code/
+WORKDIR /opt/ml/code
+
+############# SageMaker section ##############
+
+# The directory within the container in which the Python script for training is located.
+ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
+# The Python script that should be invoked and used as the entry point for training.
+ENV SAGEMAKER_PROGRAM main.py
