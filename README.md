@@ -8,13 +8,24 @@ The main goals are:
 
 ## Preliminary Steps
 
-In order to do so, a couple of things need to be set up:
+A couple of things need to be set up:
 * Conda environment having SageMaker SDK
   * This can be done with `conda env create --file=sagemaker_environment.yaml`
 * AWS CLI tools with AWS credentials setup
   * [Setting up AWS CLI tool](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
 
 SageMaker job will be started according to AWS credentials created using AWS CLI tool.
+
+## Directories and Files
+* `configs`: Directory containing config files for SageMaker and training script
+* `sagemaker_container`: Directory containing all the files required for training. 
+These files will be packaged in a Docker image and pushed to Amazon ECR.
+  * `*.py`: Training scripts, helper scripts, and everything that you need for training.
+  * `requirements.txt`: Requirements file to be used when building Docker image.
+* `build_and_push.sh`: A shell script to build Docker image and push to Amazon ECR.
+* `Dockerfile`: Dockerfile to build Docker image. Provide this Docker file when running `build_and_push.sh`.
+* `run_sagemaker_job.py`: The script which the user will have to use to start a SageMaker job from his/her computer.
+* `sagemaker_environment.yaml`: To create a SageMaker training environment on user's computer.
 
 ## Config Files
 
