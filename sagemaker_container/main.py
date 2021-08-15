@@ -8,13 +8,13 @@ import os
 
 from net import Generator, Discriminator
 from train import train
+from config import load_config
+from dataloader import creat_dataloader
+
+import torch
 
 
 def parse_args() -> argparse.Namespace:
-    """
-    Parse arguments for prepare_dataset and train_net script
-    """
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -54,21 +54,19 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_config(config_file):
-    cfg = None
-    return cfg
-
-
 def main():
     args = parse_args()
+    cfg = load_config(args.train_config)
+    dataloader_cfg = cfg.DATALOADER
+    generator_cfg = cfg.GENERATOR
+    discriminator_cfg = cfg.DISCRIMINATOR
+    training_cfg = cfg.TRAINING
+    dataloader = creat_dataloader(dataloader_cfg)
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and training_cfg.NUM_GPU > 0) else "cpu")
+    generator_network = Generator(generator_cfg, device)
+    discriminator_network = Discriminator(discriminator_cfg, device)
 
-    cfg = load_config(os.path.join(args.train_config))
-    dataloader = create_dataloader(data_dir, cfg)
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
-    generator_network = Generator(cfg, device)
-    discriminator_network = Discriminator(cfg, device)
-
-    train(cfg, dataloader, generator_network, discriminator_network, device)
+    train(training_cfg, dataloader, generator_network, discriminator_network, device)
 
 
 if __name__ == "__main__":
