@@ -14,7 +14,7 @@ class Generator(nn.Module):
     def __init__(self, cfg, device):
         super(Generator, self).__init__()
         gen_features = cfg.FEATURE_SIZE
-        latent_size = cfg.LATENT_SZIE
+        latent_size = cfg.LATENT_SIZE
         num_channels = cfg.NUM_CHANNELS
         self.net = nn.Sequential(
             nn.ConvTranspose2d(latent_size, gen_features * 8, 4, 1, 0, bias=False),
@@ -45,7 +45,7 @@ class Discriminator(nn.Module):
         disc_features = cfg.FEATURE_SIZE
         num_channels = cfg.NUM_CHANNELS
         self.net = nn.Sequential(
-            nn.Conv2d(num_channels, 4, 2, 1, bias=False),
+            nn.Conv2d(num_channels, disc_features, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(disc_features, disc_features * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(disc_features * 2),
