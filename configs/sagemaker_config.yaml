@@ -1,0 +1,14 @@
+SAGEMAKER:
+  ARN: '<FILL YOUR ARN HERE>'
+  INSTANCE_TYPE: 'm4.xlarge'
+  SPOT_INSTNACE: 'False'
+
+ECR:
+  IMAGE: 'gan_training'
+  TAG: 'build_0_1'
+
+S3:
+  TRAINING_DATA: 's3://training_data/data'
+
+TRAINING:
+  CFG: 'configs/sagemaker_config.yaml'
