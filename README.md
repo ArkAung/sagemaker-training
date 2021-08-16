@@ -1,4 +1,4 @@
-## SageMaker Training Structure and Flow
+## SageMaker Training Structure and Flow [WIP]
 
 This repo demonstrates how a good SageMaker training structure and flow can look like.
 The main goals are:
@@ -36,15 +36,20 @@ On AWS:
 * `configs`: Directory containing config files for SageMaker and training script
 * `sagemaker_container`: Directory containing all the files required for training. 
 These files will be packaged in a Docker image and pushed to Amazon ECR.
-  * `main.py`: `SAGEMAKER_PROGRAM` script. Script which SageMaker will run as soon as Docker container is loaded.
+  * `main.py`: `SAGEMAKER_PROGRAM` script. Script which SageMaker will run as soon as Docker container is loaded. The 
+environment variable `SAGEMAKER_PROGRAM` is set in `Dockerfile.sagemaker`.
   * `<*>.py`: Training, dataloader, config loader, utility scripts.
   * `requirements.txt`: Requirements file to be used when building Docker image.
 * `build_and_push.sh`: A shell script to build Docker image and push to Amazon ECR.
-* `Dockerfile`: Dockerfile to build Docker image. Provide this Docker file when running `build_and_push.sh`.
+* `Dockerfile.sagemaker`: Dockerfile to build Docker image. Provide this Docker file when running `build_and_push.sh`.
 * `run_sagemaker_job.py`: The script which the user will have to use to start a SageMaker job from his/her computer.
 * `sagemaker_environment.yaml`: To create a SageMaker training environment on the user's computer.
 
 ## Config Files
+
+### Managing Configs
+
+I use [YACS](https://github.com/rbgirshick/yacs) as a mean to manage configurations.
 
 ### SageMaker Config
 
@@ -67,9 +72,12 @@ we can provide team-wide visibility to the experiment's configurations.
 
 ## Efficient Debugging
 
-Once you have started a SageMaker training job, it can be quite challenging to debug your code properly.
+Once you have started a SageMaker training job on a SageMaker training job instance, it can be quite challenging to debug your code properly.
 First few tries can be quite agonizing if you haven't properly tested your code before running a SageMaker job on
-SageMaker training job instance. Starting a SageMaker training job instance is quite a time-consuming since it needs to pull ECR image and training data. If you have an error or a bug in your code, you will have to wait 10-15 mins before you find the error out. Therefore, it is always advisable to run your SageMaker job in `local` mode and debug at your heart's 
+SageMaker training job instance. Starting a SageMaker training job instance is quite time consuming since it needs to pull 
+ECR image and training data before it actually reads the script pointed by `SAGEMAKER_PROGRAM`. If you have an error 
+or a bug in your code, you will have to wait 10-15 minutes before you find the error out. 
+Therefore, it is always advisable to run your SageMaker job in `local` mode and debug at your heart's 
 content before you start a real SageMaker job on SageMaker training instance.
 
 Here, I would like to provide some tips on debugging your code running in a Docker container that you have created for 
