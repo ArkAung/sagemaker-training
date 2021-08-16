@@ -1,0 +1,1 @@
+We want to train a simple DCGAN on SageMaker.
