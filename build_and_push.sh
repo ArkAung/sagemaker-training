@@ -68,15 +68,15 @@ echo "Building docker image locally"
 # Build the docker image locally with the image name
 if [ "$dockerfile" == "" ]
   then
-    docker build  -t ${image} . --build-arg REGION=${region}
+    nvidia-docker build  -t ${image} . --build-arg REGION=${region}
   else
-    docker build -t ${image} . -f ${dockerfile} --build-arg REGION=${region}
+    nvidia-docker build -t ${image} . -f ${dockerfile} --build-arg REGION=${region}
 fi
 
-docker tag ${image} ${fullname}
+nvidia-docker tag ${image} ${fullname}
 
 if [ "$local" != "--local" ]
   then
     echo "Pushing docker image to ECR"
-    docker push ${fullname}
+    nvidia-docker push ${fullname}
 fi
