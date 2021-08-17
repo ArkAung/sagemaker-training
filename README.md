@@ -1,4 +1,4 @@
-## SageMaker Training Structure and Flow [WIP]
+## SageMaker Training Structure and Flow
 
 This repo demonstrates how a good SageMaker training structure and flow can look like.
 The main goals are:
@@ -28,7 +28,7 @@ On my computer:
 * Set up Docker and [nvidia-docker](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
 
 On AWS:
-* Create a SageMaker execution Role and get the ARN
+* Create a SageMaker Execution Role and get the ARN
 * Upload training data on S3
 
 ## Directories and Files
@@ -57,7 +57,7 @@ these when creating their own config for their own experiments (e.g. `configs/sa
 
 ### SageMaker Config
 
-`sagemaker_default_config.py` hold all the possible parameters of SageMaker config (and defaults). If the user wants
+`sagemaker_default_config.py` holds all the possible parameters of SageMaker config (and defaults). If the user wants
 to update the default parameters, the user can create a SageMaker config file like `configs/sagemaker_config.yaml`. 
 All the parameters required to start a SageMaker job is set in this config file. This includes:
 * Where the training data is on S3
@@ -65,7 +65,7 @@ All the parameters required to start a SageMaker job is set in this config file.
 * Where the outputs will be saved on S3
 * ECR image that will be used for training
 * What instances, how many instances and whether to use spot instances or not for training
-* ARN for SageMaker execution role
+* ARN for SageMaker Execution Role
 * Training specific config file
 
 ### Training Specific Config
@@ -79,6 +79,19 @@ We are also going to upload this training config file to S3 so that we can provi
 to update the default parameters, the user can create a training config file like `configs/training_config.yaml` and update
 the value for `TRAINING.CONFIG_FILE` in SageMaker config file.
 
+## Building Docker Image for SageMaker
+
+Build Docker image by running `./build_and_push.sh <docker_image_name> <tag> <docker file>`.
+For example, `./build_and_push.sh gan_training build_0_1 Dockerfile.sagemaker` will pull
+the base docker image, create an ECR repository with the <docker_image_name> if it does not exist, 
+build and tag docker image and push to ECR.
+
+After you have built it, you can check the built docker image with `docker images`. You will
+see your pushed Docker image on Amazon ECR as well (make sure to choose the right region).
+
+You can check the files in Docker image by running:
+`docker run -it --entrypoint /bin/bash <docker_image_id>`.
+
 ## Efficiently Testing and Debugging Training Scripts
 
 Once you have started a SageMaker training job on a SageMaker training job instance, it can be quite challenging to debug your code properly.
@@ -87,26 +100,44 @@ SageMaker training job instance. Starting a SageMaker training job instance is q
 ECR image and training data before it actually executes the script pointed by `SAGEMAKER_PROGRAM`. If you have an error 
 or a bug in your code, you will have to wait 10-15 minutes before you find the error out. 
 Therefore, it is always advisable to run your SageMaker job in `local` mode and debug at your heart's 
-content before you start a real SageMaker job on SageMaker training instance.
+content before you start a real SageMaker job on SageMaker training instance. Even if you 
+independently test your training code, debugging whether your script has got the correct file and directory paths in the 
+Docker container can be quite annoying.
 
+To test the Docker container running your training code in `local` mode:
 1. Set `INSTANCE_TYPE` in your SageMaker config to `local` or `local-gpu`
 2. Make changes in your code
 3. Re-build (with `build_and_push.sh`) Docker image to incorporate this change
 4. Re-run SageMaker job (with `run_sage_maker_job.py`)
 5. Check for error in your code. If there is an error, go back to step 2.
 
-Since your training script is running in a Docker container when you start a SageMaker job,
-I would like to provide some helpful tips on debugging your code running in a Docker container.
+Debugging code with `print` statements or logging to a file is not very efficient. 
+Using debuggers make your debugging experience a lot smoother. Here is how you
+can you [Python Debugger (pdb)](https://docs.python.org/3/library/pdb.html) to debug
+code running in Docker container built for SageMaker training job.
 
+1. Make changes in your code
+2. Place `import pdb; pdb.set_trace()` in your code as a breakpoint. Program exection will
+pause when it reaches to that line.
+3. Re-build (with `build_and_push.sh`) Docker image to incorporate additional breakpoint line.
+4. Re-run SageMaker job (with `run_sagemaker_job.py`).
+5. The standard output will pause when it reaches the breakpoint. However, you will
+not get an interactive `pdb` console. In order to get to interactive `pdb` console we
+will attach to that running container.
+6. In a separate terminal tab, find out the container ID with `docker ps`.
+7. Attach to running container with `docker attach <container_id>`. You can start
+debugging your code with `pdb` just like usual.
 
+### Stepping up the debugging game with pudb
 
-pdb.set_trace()
-pudb.set_trace()
-Docker run 
-Docker attach
+`pdb` is a good debugger, but you can be even more efficient with [pudb](https://documen.tician.de/pudb/). `pudb` 
+provides all the niceties of modern GUI-based debuggers in a more lightweight and keyboard-friendly package
 
-## Flow
-* Build docker image and push to ECR with `build_and_push.sh`. Based on image name you provide, this will 
-create a new ECR repository if it does not exist.
-* Set SageMaker configs and training configs in `configs/sagemaker_config.yaml` and `configs/training_config.yaml`.
-* Start SageMaker job with `run_sagemaker_job.py`
+In order to use `pudb`, you would have to add `pudb` in `sagemaker_container/requirements.txt`, place a breakpoint with
+`import pudb; pudb.set_trace()` and rebuild the Docker image. Attach to running Docker container just like before
+and now you will be greeted with a sleek terminal Python Debugger.
+
+## Running on SageMaker Training Instances
+* Update `INSTANCE_TYPE` in SageMaker config (e.g. configs/sagemaker_config.yaml) to the instance type 
+you want to train on (refer [this](https://aws.amazon.com/sagemaker/pricing/); scroll down to the table and click on Training tab)
+* Start SageMaker job with `python run_sagemaker_job.py --config configs/sagemaker_config.yaml`
