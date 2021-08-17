@@ -1,17 +1,17 @@
 SAGEMAKER:
-  ARN: '<FILL YOUR ARN HERE>'
+  ARN: 'arn:aws:iam::353178981541:role/SageMakerTrainingExecutionRole'
   INSTANCE_TYPE: 'local_gpu'
-  INSTANCE_COUNT: 1
   SPOT_INSTANCE: False
   JOB_NAME: 'gan_training'
 
 ECR:
-  IMAGE: 'gan_training'
+  IMAGE_NAME: 'gan_training'
   TAG: 'build_0_1'
 
 S3:
-  TRAINING_DATA: 's3://training_data/data'
+  TRAINING_DATA: 's3://sagemaker-gan-training-data/data'
+  SAGEMAKER_RESULTS_BUCKET: 'sagemaker-gan-results'
   EXPERIMENT_NAME: 'ml_engineer_1/gan_training/training_20210816_v01'
 
 TRAINING:
-  CFG: 'configs/training_config.yaml'
+  CONFIG_FILE: 'configs/training_config.yaml'
