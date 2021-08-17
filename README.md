@@ -138,6 +138,8 @@ To use `pudb`, you would have to add `pudb` in `sagemaker_container/requirements
 `import pudb; pudb.set_trace()` and rebuild the Docker image. Attach to running Docker container just like before
 and now you will be greeted with a sleek terminal Python Debugger.
 
+View [this video](https://youtu.be/Mhl7j9BsXLA) for a demo on how to debug training code in Docker container.
+
 ## Running on SageMaker Training Instances
 
 Now that you have put everything together and tested your training code, you are ready to train on SageMaker training instances:
