@@ -7,7 +7,7 @@ import os
 import sagemaker
 from sagemaker.estimator import Estimator
 
-from config import load_config
+from sagemaker_default_config import load_config
 
 
 def create_metrics_regex():
@@ -21,13 +21,13 @@ def create_metrics_regex():
     return metrics
 
 
-def upload_configs(cfg, sm_session):
-    s3_train_config_path = sm_session.upload_data(cfg.TRAINING.CFG,
+def upload_configs(cfg, sagemaker_config, sm_session):
+    s3_train_config_path = sm_session.upload_data(cfg.TRAINING.CONFIG_FILE,
                                                   bucket=sm_session.default_bucket(),
                                                   key_prefix=f'{cfg.S3.EXPERIMENT_NAME}/{cfg.S3.CONFIG_FOLDER}')
     print(f"Training config uploaded to {s3_train_config_path}")
 
-    s3_sagemaker_config_path = sm_session.upload_data(cfg.SAGEMAKER.CFG,
+    s3_sagemaker_config_path = sm_session.upload_data(sagemaker_config,
                                                       bucket=sm_session.default_bucket(),
                                                       key_prefix=f'{cfg.S3.EXPERIMENT_NAME}/{cfg.S3.CONFIG_FOLDER}')
     print(f"SageMaker job config uploaded to {s3_sagemaker_config_path}")
@@ -36,19 +36,14 @@ def upload_configs(cfg, sm_session):
             'sagemaker_config_uri': s3_sagemaker_config_path}
 
 
-def start_sagemaker_job(cfg):
-    training_cfg = cfg['TRAINING']
-
-    bucket = cfg.S3.SAGEMAKER_BUCKET
+def start_sagemaker_job(cfg, sagemaker_config):
+    results_bucket = cfg.S3.SAGEMAKER_RESULTS_BUCKET
     experiment_name = cfg.S3.EXPERIMENT_NAME
 
-    training_data_uri = f"s3://cfg.S3.TRAIN_DATASET_BUCKET"
-    checkpoint_uri = f"s3://{bucket}/{experiment_name}/{cfg.S3.CHECKPOINT_DIR}"
-    output_uri = f"s3://{bucket}/{experiment_name}/{cfg.S3.OUTPUT_DIR}"
+    output_uri = f"s3://{results_bucket}/{experiment_name}/{cfg.S3.OUTPUT_DIR}"
 
-    sm_session = sagemaker.Session(default_bucket=bucket)
-
-    uploaded_configs = upload_configs(cfg, sm_session)
+    sm_session = sagemaker.Session(default_bucket=results_bucket)
+    uploaded_configs = upload_configs(cfg, sagemaker_config, sm_session)
 
     role = cfg.SAGEMAKER.ARN
     region = sm_session.boto_region_name
@@ -60,28 +55,27 @@ def start_sagemaker_job(cfg):
     training_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/{docker_image_name}:{docker_tag}"
 
     # Training instance type
-    training_instance = cfg.SAGEMAKER.TRAINING_INSTANCE
+    training_instance = cfg.SAGEMAKER.INSTANCE_TYPE
     if training_instance.startswith("local"):
         training_session = sagemaker.LocalSession()
         training_session.config = {"local": {"local_code": True}}
+
+        checkpoint_uri = None
+        use_spot = False
+        checkpoint_output_dir = None
     else:
         training_session = sm_session
+
+        checkpoint_uri = f"s3://{results_bucket}/{experiment_name}/{cfg.S3.CHECKPOINT_DIR}"
+        use_spot = cfg.SAGEMAKER.USE_SPOT_INSTANCE
+        checkpoint_output_dir = cfg.CONTAINER.OUTPUT_DIR
 
     # Metrics to monitor during training, each metric is scraped from container Stdout
     metrics = create_metrics_regex()
 
-    hyperparameters = {"dataset_base_dir": cfg.CONTAINER.DATASET_BASE_DIR,
-                       "train_cfg_filename": os.path.basename(cfg.TRAINING.CFG),
+    hyperparameters = {"train_cfg_filename": os.path.basename(cfg.TRAINING.CONFIG_FILE),
                        "output_dir": cfg.CONTAINER.OUTPUT_DIR
                        }
-
-    # Compile Sagemaker Training job object and start training
-    use_spot = cfg.SAGEMAKER.USE_SPOT_INSTANCE
-
-    if training_instance in ['local', 'local-gpu']:
-        checkpoint_uri = None
-        use_spot = False
-        training_cfg['REMOTE_OUTPUT_DIR'] = None
 
     if use_spot:
         max_wait_time = cfg.SAGEMAKER.MAX_WAIT_TIME
@@ -98,15 +92,16 @@ def start_sagemaker_job(cfg):
         metric_definitions=metrics,
         output_path=output_uri,
         checkpoint_s3_uri=checkpoint_uri,
-        checkpoint_local_path=cfg.CONTAINER.OUTPUT_DIR,
+        checkpoint_local_path=checkpoint_output_dir,
         use_spot_instances=use_spot,
         max_run=cfg.SAGEMAKER.MAX_RUN_TIME,
         max_wait=max_wait_time,
         base_job_name=cfg.SAGEMAKER.JOB_NAME,
     )
 
-    input_channels = {"traindata": training_data_uri,
-                      "traincfg": uploaded_configs['train_config_uri']}
+    input_channels = {"traindata": cfg.S3.TRAINING_DATA,
+                      "config": uploaded_configs['train_config_uri']}
+
     estimator.fit(input_channels)
 
 
@@ -121,7 +116,7 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
     cfg = load_config(args.config)
-    start_sagemaker_job(cfg)
+    start_sagemaker_job(cfg, sagemaker_config=args.config)
 
 
 if __name__ == "__main__":
