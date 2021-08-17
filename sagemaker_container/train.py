@@ -87,9 +87,9 @@ def train(training_cfg, generator_cfg, dataloader, generator, discriminator, dev
 
             # Output training stats
             if i % 50 == 0:
-                print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
-                      % (epoch, num_epochs, i, len(dataloader),
-                         errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+                print(f'[{epoch}/{num_epochs}] [{i}/{len(dataloader)}] '
+                      f'Loss_D: {errD.item()} Loss_G: {errG.item()} '
+                      f'D(x): {D_x} D(G(z))_before: {D_G_z1} D(G(z))_after: {D_G_z2}')
 
             # Save Losses for plotting later
             G_losses.append(errG.item())
