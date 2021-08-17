@@ -3,70 +3,69 @@ Entry script for SageMaker training
 """
 
 import argparse
-import ast
 import os
 
+import torch
+
+from dataloader import creat_dataloader
 from net import Generator, Discriminator
 from train import train
-from config import load_config
-from dataloader import creat_dataloader
-
-import torch
+from training_default_config import load_config
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--train_config',
+        '--train_cfg_filename',
         type=str,
-        help='Training config file',
-        default=os.environ.get('SM_CHANNEL_TRAINCFG'))
+        required=True,
+        help='Training config filename')
+
+    parser.add_argument(
+        '--config_dir',
+        type=str,
+        help='Directory for config files',
+        default=os.environ.get('SM_CHANNEL_CONFIG'))
 
     parser.add_argument(
         '--train_data',
         type=str,
-        help='Directory where training images from S3 is downloaded',
+        help='Directory for training images',
         default=os.environ.get('SM_CHANNEL_TRAINDATA')
     )
-
-    parser.add_argument(
-        '--dataset_base_dir',
-        type=str,
-        default='/opt/ml/datasets',
-        help='Path to store all training data')
-
-    parser.add_argument(
-        "--num_gpus",
-        type=int,
-        default=os.environ.get('SM_NUM_GPUS'))
 
     parser.add_argument(
         "--output_dir",
         type=str,
         required=True,
-        help="Directory where model checkpoints, logs and tensorboard logs are writtern and annotations are cached."
-             "This directory will be synced with S3.")
-
-    parser.add_argument("--model_dir", type=str, default=os.environ.get('SM_MODEL_DIR'))
-    parser.add_argument("--hosts", type=str, default=ast.literal_eval(os.environ.get('SM_HOSTS')))
-    parser.add_argument("--current_host", type=str, default=os.environ.get('SM_CURRENT_HOST'))
+        help="Directory where model checkpoints, logs and other artefacts are saved."
+             "This directory will be synced with s3://SAGEMAKER_RESULTS_BUCKET/EXPERIMENT_NAME/CHECKPOINT_DIR on S3.")
     return parser.parse_args()
+
+
+def populate_data_dir(dataloader_cfg, data_dir):
+    dataloader_cfg.defrost()
+    dataloader_cfg.DATA_DIR = data_dir
+    dataloader_cfg.freeze()
+    return dataloader_cfg
 
 
 def main():
     args = parse_args()
-    cfg = load_config(args.train_config)
+    cfg = load_config(os.path.join(args.config_dir, args.train_cfg_filename))
     dataloader_cfg = cfg.DATALOADER
+    dataloader_cfg = populate_data_dir(dataloader_cfg, args.train_data)
     generator_cfg = cfg.GENERATOR
     discriminator_cfg = cfg.DISCRIMINATOR
     training_cfg = cfg.TRAINING
+
     dataloader = creat_dataloader(dataloader_cfg)
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and training_cfg.NUM_GPU > 0) else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     generator_network = Generator(generator_cfg, device)
     discriminator_network = Discriminator(discriminator_cfg, device)
 
-    train(training_cfg, dataloader, generator_network, discriminator_network, device)
+    train(training_cfg, generator_cfg, dataloader, generator_network, discriminator_network, device)
 
 
 if __name__ == "__main__":
