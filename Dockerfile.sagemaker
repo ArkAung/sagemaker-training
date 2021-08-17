@@ -3,7 +3,7 @@
 # more available base images
 
 ARG REGION=us-east-2
-FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.8.1-gpu-py36-cu111-ubuntu18.04
+FROM 763104351884.dkr.ecr.${REGION}.amazonaws.com/pytorch-training:1.8.1-gpu-py36-cu111-ubuntu18.04
 
 ############# Install Python packages ############
 
@@ -19,5 +19,6 @@ WORKDIR /opt/ml/code
 
 # The directory within the container in which the Python script for training is located.
 ENV SAGEMAKER_SUBMIT_DIRECTORY /opt/ml/code
+
 # The Python script that should be invoked and used as the entry point for training.
 ENV SAGEMAKER_PROGRAM main.py
