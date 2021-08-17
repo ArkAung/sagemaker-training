@@ -1,7 +1,9 @@
 SAGEMAKER:
   ARN: '<FILL YOUR ARN HERE>'
-  INSTANCE_TYPE: 'm4.xlarge'
-  SPOT_INSTNACE: 'False'
+  INSTANCE_TYPE: 'local_gpu'
+  INSTANCE_COUNT: 1
+  SPOT_INSTANCE: False
+  JOB_NAME: 'gan_training'
 
 ECR:
   IMAGE: 'gan_training'
@@ -9,6 +11,7 @@ ECR:
 
 S3:
   TRAINING_DATA: 's3://training_data/data'
+  EXPERIMENT_NAME: 'ml_engineer_1/gan_training/training_20210816_v01'
 
 TRAINING:
-  CFG: 'configs/sagemaker_config.yaml'
+  CFG: 'configs/training_config.yaml'
