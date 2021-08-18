@@ -115,7 +115,7 @@ To test the Docker container running your training code in `local` mode:
 
 Debugging code with `print` statements or logging to a file is not very efficient. 
 Using debuggers make your debugging experience a lot smoother. Here is how you
-can you [Python Debugger (pdb)](https://docs.python.org/3/library/pdb.html) to debug
+can use [Python Debugger (pdb)](https://docs.python.org/3/library/pdb.html) to debug
 code running in Docker container built for SageMaker training job.
 
 1. Make changes in your code
