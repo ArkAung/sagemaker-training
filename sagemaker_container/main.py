@@ -54,6 +54,7 @@ def populate_data_dir(dataloader_cfg, data_dir):
 def main():
     args = parse_args()
     cfg = load_config(os.path.join(args.config_dir, args.train_cfg_filename))
+
     dataloader_cfg = cfg.DATALOADER
     dataloader_cfg = populate_data_dir(dataloader_cfg, args.train_data)
     generator_cfg = cfg.GENERATOR
