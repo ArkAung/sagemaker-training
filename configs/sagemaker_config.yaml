@@ -1,5 +1,5 @@
 SAGEMAKER:
-  ARN: 'arn:aws:iam::353178981541:role/SageMakerTrainingExecutionRole'
+  ARN: '**INSERT SageMaker Trianing Execution Role ARN HERE**'
   INSTANCE_TYPE: 'local_gpu'
   SPOT_INSTANCE: False
   JOB_NAME: 'gan_training'
